@@ -14,12 +14,13 @@ class SynologyService:
         self.port = info_dict.get('port')
         self.id = info_dict.get('id')
         self.pw = info_dict.get('pw')
+        self.dsm_version = info_dict.get('dsm_major_version', 6)
         self.synology_core: base_api_core.Core = None
 
     def __enter__(self):
         self.synology_core = base_api_core.Core(ip_address=self.ip, port=self.port,
                                                 username=self.id, password=self.pw,
-                                                dsm_version=6)
+                                                dsm_version=self.dsm_version)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
