@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import time
+
 import lib
+import socket, struct
 from datetime import datetime
 from lib import SingleTone, log
 from synology_api import base_api_core
@@ -71,3 +74,43 @@ class SynologyManager(SingleTone):
                 log.error(str(e), e)
                 result_dict[nas_name] = cls.generate_result_dict(False, exception=e)
         log.info(f'[Shutdown NAS] Result: {result_dict}')
+
+    @staticmethod
+    def send_wol(mac_address: str, ip: str):
+        delimiter = mac_address[2]
+        removed_delim_mac_address = mac_address.replace(delimiter, '')
+
+        data = b'FFFFFFFFFFFF' + (removed_delim_mac_address*16).encode()
+        send_data = b''
+
+        for i in range(0, len(data), 2):
+            send_data += struct.pack('B', int(data[i:i+2], 16))
+
+        broadcast = f"{ip[:ip.rfind('.')]}.255"
+
+        try:
+            # UDP
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                sock.sendto(send_data, (broadcast, 9))
+            return True
+        except Exception as e:
+            log.error(str(e), e)
+            return False
+
+    @classmethod
+    def power_on(cls, nas_name: str):
+        server_dict = lib.configuration.get_server(nas_name)
+        if not cls.send_wol(server_dict.get('mac'), server_dict.get('ip')):
+            log.error(f'Cannot send WOL({nas_name})')
+            return False
+        log.info(f'Send WOL magic packet({nas_name})')
+        return True
+
+    @classmethod
+    def power_on_all(cls):
+        server_info_dict = lib.configuration.get_servers()
+        for nas_name in server_info_dict.keys():
+            cls.power_on(nas_name)
+            time.sleep(3)
+

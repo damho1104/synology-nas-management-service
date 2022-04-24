@@ -73,3 +73,22 @@ async def shutdown_nas_all(request: Request, background_tasks: BackgroundTasks):
     else:
         lib.syno_manager.shutdown_all()
     return "OK"
+
+
+@app.get('/nas/power/on/{nas_name}', response_class=Response)
+def power_on_nas(nas_name: str):
+    if nas_name not in lib.configuration.get_servers().keys():
+        log.error(f'"{nas_name}" does not contain servers.')
+        raise HTTPException(status_code=404)
+    if not lib.syno_manager.power_on(nas_name):
+        return "Fail"
+    return "OK"
+
+
+@app.get('/nas/all/power/on', response_class=Response)
+def power_on_nas_all(request: Request, background_tasks: BackgroundTasks):
+    if request.query_params.get('background_mode', False):
+        background_tasks.add_task(lib.syno_manager.power_on_all)
+    else:
+        lib.syno_manager.power_on_all()
+    return "OK"
