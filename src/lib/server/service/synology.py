@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import asyncio
 import time
-
+import copy
 import lib
 import socket, struct
 from datetime import datetime
@@ -58,23 +59,6 @@ class SynologyManager(SingleTone):
             "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-    @classmethod
-    def shutdown_all(cls):
-        log.info(f'[Shutdown NAS] Run Shutdown NAS for all.')
-        server_dict = lib.configuration.get_servers()
-        result_dict = {}
-        for nas_name in server_dict.keys():
-            try:
-                with SynologyService(info_dict=server_dict.get(nas_name)) as synology:
-                    if not synology.shutdown():
-                        result_dict[nas_name] = cls.generate_result_dict(False)
-                        continue
-                    result_dict[nas_name] = cls.generate_result_dict(True)
-            except Exception as e:
-                log.error(str(e), e)
-                result_dict[nas_name] = cls.generate_result_dict(False, exception=e)
-        log.info(f'[Shutdown NAS] Result: {result_dict}')
-
     @staticmethod
     def send_wol(mac_address: str, ip: str):
         delimiter = mac_address[2]
@@ -99,18 +83,113 @@ class SynologyManager(SingleTone):
             return False
 
     @classmethod
-    def power_on(cls, nas_name: str):
+    async def power_off_async(cls, nas_name: str, enable_name: bool = False):
+        def get_return_value(msg: str):
+            if enable_name:
+                return {"name": nas_name, "result": msg}
+            else:
+                return msg
+
+        if nas_name.lower() == "all":
+            await cls.power_off_all_async()
+            return "OK"
         server_dict = lib.configuration.get_server(nas_name)
-        if not cls.send_wol(server_dict.get('mac'), server_dict.get('ip')):
-            log.error(f'Cannot send WOL({nas_name})')
-            return False
-        log.info(f'Send WOL magic packet({nas_name})')
-        return True
+        try:
+            with SynologyService(info_dict=server_dict) as synology:
+                if not synology.shutdown():
+                    return get_return_value("Fail")
+                return get_return_value("OK")
+        except Exception as e:
+            log.error(str(e), e)
+            return get_return_value("Fail")
+
+    @classmethod
+    def power_off_all(cls):
+        log.info(f'[Shutdown NAS] Run Shutdown NAS for all.')
+        server_dict = lib.configuration.get_servers()
+        result_list = [asyncio.run(cls.power_off_async(nas_name, enable_name=True)) for nas_name in server_dict.keys()]
+        log.info(f'[Shutdown NAS] Result: {result_list}')
+
+    @classmethod
+    async def power_off_all_async(cls):
+        log.info(f'[Shutdown NAS] Run Shutdown NAS for all.')
+        server_dict = lib.configuration.get_servers()
+        task_list = [asyncio.create_task(cls.power_off_async(nas_name, enable_name=True)) for nas_name in server_dict.keys()]
+        result_list = await asyncio.gather(*task_list)
+        log.info(f'[Shutdown NAS] Result: {result_list}')
+
+    @classmethod
+    async def power_on_async(cls, nas_name: str, enable_sleep=True):
+        if nas_name.lower() == 'all':
+            return await cls.power_on_all_async()
+        try:
+            server_dict = lib.configuration.get_server(nas_name)
+            if not cls.send_wol(server_dict.get('mac'), server_dict.get('ip')):
+                log.error(f'[Startup NAS] Cannot send WOL({nas_name})')
+                return False
+            log.info(f'[Startup NAS] Send WOL magic packet({nas_name})')
+            return True
+        finally:
+            if enable_sleep:
+                await asyncio.sleep(3)
 
     @classmethod
     def power_on_all(cls):
+        log.info(f'[Startup NAS] Run Startup NAS for all.')
         server_info_dict = lib.configuration.get_servers()
+        result_list = []
         for nas_name in server_info_dict.keys():
-            cls.power_on(nas_name)
+            result_list.append(asyncio.run(cls.power_on_async(nas_name, enable_sleep=False)))
             time.sleep(3)
+        if False in result_list:
+            return False
+        return True
+
+    @classmethod
+    async def power_on_all_async(cls):
+        log.info(f'[Startup NAS] Run Startup NAS for all.')
+        server_info_dict = lib.configuration.get_servers()
+        task_list = [asyncio.create_task(cls.power_on_async(nas_name)) for nas_name in server_info_dict.keys()]
+        result_list = await asyncio.gather(*task_list)
+        if False in result_list:
+            return False
+        return True
+
+    @classmethod
+    async def get_nas_status_async(cls, nas_name: str, enable_name: bool = True):
+        def get_return_value(return_dict: OrderedDict):
+            if enable_name:
+                return_dict['name'] = nas_name
+            return return_dict
+
+        if nas_name.lower() == "all":
+            return await cls.get_nas_status_all_async()
+        server_dict = lib.configuration.get_server(nas_name)
+        try:
+            with SynologyService(info_dict=server_dict):
+                return get_return_value({"ip": server_dict.get("ip"), "port": server_dict.get("port"), "active": True})
+        except Exception as e:
+            log.error(str(e), e)
+            return get_return_value({"active": False})
+
+    @classmethod
+    def get_nas_status_all(cls):
+        result_dict = OrderedDict()
+        for nas_name in lib.configuration.get_servers().keys():
+            element = copy.deepcopy(asyncio.run(cls.get_nas_status_async(nas_name, enable_name=False)))
+            result_dict[nas_name] = element
+        return result_dict
+
+    @classmethod
+    async def get_nas_status_all_async(cls):
+        server_dict = lib.configuration.get_servers()
+        result_dict = OrderedDict()
+        task_list = [asyncio.create_task(cls.get_nas_status_async(nas_name, enable_name=True)) for nas_name in server_dict.keys()]
+        for element in await asyncio.gather(*task_list):
+            result_dict[element.get('name')] = OrderedDict({
+                'ip': element.get('ip'),
+                'port': element.get('port'),
+                'active': element.get('active')
+            })
+        return result_dict
 
