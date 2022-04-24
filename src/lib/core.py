@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os
 import sys
 import csv
 import mimetypes
@@ -34,11 +35,17 @@ for line in lines:
 
 
 def run():
+    if os.name.lower() == "nt":
+        reload_flag = True
+        workers = 1
+    else:
+        reload_flag = False
+        workers = 4
     uvicorn.run("lib:app",
                 host=lib.configuration.get_ip(),
                 port=int(lib.configuration.get_port()),
-                reload=True,
-                workers=100,
+                reload=reload_flag,
+                workers=workers,
                 access_log=False,
                 log_level='info')
 

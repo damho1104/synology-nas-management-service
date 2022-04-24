@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks, Request
 from fastapi.responses import JSONResponse, Response
 
 import lib
@@ -47,20 +47,10 @@ def shutdown_nas(nas_name: str):
         return "Fail"
 
 
-@app.get('/nas/all/shutdown', response_class=JSONResponse)
-def shutdown_nas_all():
-    log.info("Shutdown NAS all")
-    server_dict = lib.configuration.get_servers()
-    result_dict = {}
-    for nas_name in server_dict.keys():
-        try:
-            with SynologyService(info_dict=server_dict.get(nas_name)) as synology:
-                if not synology.shutdown():
-                    result_dict[nas_name] = False
-                    continue
-                result_dict[nas_name] = True
-                log.info(f'The request of shutdown "{nas_name}" is sent.')
-        except Exception as e:
-            log.error(str(e), e)
-            result_dict[nas_name] = False
-    return result_dict
+@app.get('/nas/all/shutdown', response_class=Response)
+async def shutdown_nas_all(request: Request, background_tasks: BackgroundTasks):
+    if request.query_params.get('background_mode', False):
+        background_tasks.add_task(lib.syno_manager.shutdown_all)
+    else:
+        lib.syno_manager.shutdown_all()
+    return "OK"

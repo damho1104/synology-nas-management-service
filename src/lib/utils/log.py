@@ -34,6 +34,11 @@ class FileLogFormatter(logging.Formatter):
                                    fmt='[%(asctime)s] [%(levelname)-8s] [%(thread)-5d] %(message)s')
 
 
+class NoWriteLogFilter(logging.Filter):
+    def filter(self, record) -> bool:
+        return False
+
+
 def get_log_file_path() -> str:
     return LOG_FILE_PATH
 
@@ -64,6 +69,7 @@ def init():
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(FileLogFormatter())
     logging.getLogger().addHandler(file_handler)
+    logging.getLogger("urllib3.connectionpool").addFilter(NoWriteLogFilter())
 
 
 def log(level, msg):
