@@ -25,7 +25,8 @@ ERASE_LINE = '\x1b[K'  # instructs the terminal to erase from the cursor to the 
 LOG_FOLDER = FileUtil.get_path('logs')
 os.makedirs(LOG_FOLDER, exist_ok=True)
 
-LOG_FILE_PATH = os.path.join(LOG_FOLDER, f'server.{datetime.datetime.now().strftime("%Y%m%d%H%M%S.%f")}.log')
+# LOG_FILE_PATH = os.path.join(LOG_FOLDER, f'server.{datetime.datetime.now().strftime("%Y%m%d%H%M%S.%f")}.log')
+LOG_FILE_PATH = os.path.join(LOG_FOLDER, f'server.{datetime.datetime.now().strftime("%Y%m%d")}.log')
 
 
 class FileLogFormatter(logging.Formatter):
