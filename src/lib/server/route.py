@@ -31,7 +31,7 @@ def get_nas_status(nas_name: str):
         return {"name": nas_name, "active": False}
 
 
-@app.get('/{nas_name}/shutdown', response_class=Response)
+@app.get('/nas/shutdown/{nas_name}', response_class=Response)
 def shutdown_nas(nas_name: str):
     if nas_name not in lib.configuration.get_servers().keys():
         log.error(f'"{nas_name}" does not contain servers.')
@@ -45,3 +45,20 @@ def shutdown_nas(nas_name: str):
     except Exception as e:
         log.error(str(e), e)
         return "Fail"
+
+
+@app.get('/nas/shutdown/all', response_class=JSONResponse)
+def shutdown_nas_all():
+    server_dict = lib.configuration.get_servers()
+    result_dict = {}
+    for nas_name in server_dict.keys():
+        try:
+            with SynologyService(info_dict=server_dict.get(nas_name)) as synology:
+                if not synology.shutdown():
+                    result_dict[nas_name] = False
+                    continue
+                result_dict[nas_name] = True
+        except Exception as e:
+            log.error(str(e), e)
+            result_dict[nas_name] = False
+    return result_dict
