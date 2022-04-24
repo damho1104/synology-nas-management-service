@@ -50,6 +50,7 @@
     "MYNAS1": {
       "ip": "192.168.0.3",
       "port": "5000",
+      "mac": "00:11:22:33:44:55",
       "id": "admin",
       "pw": "adminadmin",
       "dsm_major_version": 6
@@ -80,6 +81,7 @@ Synology NAS 로컬 서버 정보
     "MYNAS1": {
       "ip": "192.168.0.3",
       "port": "5000",
+      "mac": "00:11:22:33:44:55",
       "id": "admin",
       "pw": "adminadmin",
       "dsm_major_version": 6
@@ -87,6 +89,7 @@ Synology NAS 로컬 서버 정보
     "MYNAS2": {
       "ip": "192.168.0.13",
       "port": "5000",
+      "mac": "AA:00:22:33:44:AF",
       "id": "admin",
       "pw": "adminadmin",
       "dsm_major_version": 7
