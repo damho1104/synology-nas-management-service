@@ -32,7 +32,7 @@ LOG_FILE_PATH = os.path.join(LOG_FOLDER, f'server.{datetime.datetime.now().strft
 class FileLogFormatter(logging.Formatter):
     def __init__(self):
         logging.Formatter.__init__(self,
-                                   fmt='[%(asctime)s] [%(levelname)-8s] [%(thread)-5d] %(message)s')
+                                   fmt='[%(asctime)s] [%(levelname)-8s] [%(process)d] [%(thread)-5d] [%(threadName)s] %(message)s')
 
 
 class NoWriteLogFilter(logging.Filter):
