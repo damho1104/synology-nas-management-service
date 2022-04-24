@@ -17,6 +17,25 @@ def get_info():
         "status": "active"}, status_code=200)
 
 
+@app.get('/nas/status', response_class=JSONResponse)
+def get_nas_status_all():
+    server_info_dict = lib.configuration.get_servers()
+    result_dict = OrderedDict()
+    for server_name in server_info_dict.keys():
+        server_dict = server_info_dict.get(server_name)
+        try:
+            with SynologyService(info_dict=server_dict):
+                result_dict[server_name] = {
+                    "ip": server_dict.get("ip"), "port": server_dict.get("port"), "active": True
+                }
+        except Exception as e:
+            log.error(str(e), e)
+            result_dict[server_name] = {
+                "ip": server_dict.get("ip"), "port": server_dict.get("port"), "active": False
+            }
+    return result_dict
+
+
 @app.get('/nas/status/{nas_name}', response_class=JSONResponse)
 def get_nas_status(nas_name: str):
     if nas_name not in lib.configuration.get_servers().keys():
