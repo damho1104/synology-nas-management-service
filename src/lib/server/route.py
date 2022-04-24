@@ -17,7 +17,7 @@ def get_info():
         "status": "active"}, status_code=200)
 
 
-@app.get('/{nas_name}/status', response_class=JSONResponse)
+@app.get('/nas/status/{nas_name}', response_class=JSONResponse)
 def get_nas_status(nas_name: str):
     if nas_name not in lib.configuration.get_servers().keys():
         log.error(f'"{nas_name}" does not contain servers.')
@@ -47,8 +47,9 @@ def shutdown_nas(nas_name: str):
         return "Fail"
 
 
-@app.get('/nas/shutdown/all', response_class=JSONResponse)
+@app.get('/nas/all/shutdown', response_class=JSONResponse)
 def shutdown_nas_all():
+    log.info("Shutdown NAS all")
     server_dict = lib.configuration.get_servers()
     result_dict = {}
     for nas_name in server_dict.keys():
@@ -58,6 +59,7 @@ def shutdown_nas_all():
                     result_dict[nas_name] = False
                     continue
                 result_dict[nas_name] = True
+                log.info(f'The request of shutdown "{nas_name}" is sent.')
         except Exception as e:
             log.error(str(e), e)
             result_dict[nas_name] = False
