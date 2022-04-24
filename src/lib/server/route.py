@@ -39,7 +39,7 @@ def get_nas_status_all():
 @app.get('/nas/status/{nas_name}', response_class=JSONResponse)
 def get_nas_status(nas_name: str):
     check_and_raise(nas_name)
-    return asyncio.run(lib.syno_manager.get_nas_status_async(nas_name))
+    return lib.syno_manager.get_nas_status(nas_name)
 
 
 @app.get('/nas/all/shutdown', response_class=Response)
@@ -54,7 +54,7 @@ def shutdown_nas_all(request: Request, background_tasks: BackgroundTasks):
 @app.get('/nas/shutdown/{nas_name}', response_class=Response)
 def shutdown_nas(nas_name: str):
     check_and_raise(nas_name)
-    return asyncio.run(lib.syno_manager.power_off_async(nas_name))
+    return lib.syno_manager.power_off(nas_name)
 
 
 @app.get('/nas/all/power/on', response_class=Response)
@@ -69,6 +69,6 @@ def power_on_nas_all(request: Request, background_tasks: BackgroundTasks):
 @app.get('/nas/power/on/{nas_name}', response_class=Response)
 def power_on_nas(nas_name: str):
     check_and_raise(nas_name)
-    if not asyncio.run(lib.syno_manager.power_on_async(nas_name)):
+    if not lib.syno_manager.power_on(nas_name):
         return "Fail"
     return "OK"

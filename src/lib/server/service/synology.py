@@ -83,7 +83,7 @@ class SynologyManager(SingleTone):
             return False
 
     @classmethod
-    async def power_off_async(cls, nas_name: str, enable_name: bool = False):
+    def power_off(cls, nas_name: str, enable_name: bool = False):
         def get_return_value(msg: str):
             if enable_name:
                 return {"name": nas_name, "result": msg}
@@ -91,7 +91,7 @@ class SynologyManager(SingleTone):
                 return msg
 
         if nas_name.lower() == "all":
-            await cls.power_off_all_async()
+            asyncio.run(cls.power_off_all_async())
             return "OK"
         server_dict = lib.configuration.get_server(nas_name)
         try:
@@ -104,10 +104,14 @@ class SynologyManager(SingleTone):
             return get_return_value("Fail")
 
     @classmethod
+    async def power_off_async(cls, nas_name: str, enable_name: bool = False):
+        return cls.power_off(nas_name, enable_name=enable_name)
+
+    @classmethod
     def power_off_all(cls):
         log.info(f'[Shutdown NAS] Run Shutdown NAS for all.')
         server_dict = lib.configuration.get_servers()
-        result_list = [asyncio.run(cls.power_off_async(nas_name, enable_name=True)) for nas_name in server_dict.keys()]
+        result_list = [cls.power_off(nas_name, enable_name=True) for nas_name in server_dict.keys()]
         log.info(f'[Shutdown NAS] Result: {result_list}')
 
     @classmethod
@@ -119,9 +123,9 @@ class SynologyManager(SingleTone):
         log.info(f'[Shutdown NAS] Result: {result_list}')
 
     @classmethod
-    async def power_on_async(cls, nas_name: str, enable_sleep=True):
+    def power_on(cls, nas_name: str, enable_sleep=True):
         if nas_name.lower() == 'all':
-            return await cls.power_on_all_async()
+            return asyncio.run(cls.power_on_all_async())
         try:
             server_dict = lib.configuration.get_server(nas_name)
             if not cls.send_wol(server_dict.get('mac'), server_dict.get('ip')):
@@ -131,7 +135,11 @@ class SynologyManager(SingleTone):
             return True
         finally:
             if enable_sleep:
-                await asyncio.sleep(3)
+                time.sleep(3)
+
+    @classmethod
+    async def power_on_async(cls, nas_name: str, enable_sleep=True):
+        return cls.power_on(nas_name, enable_sleep=enable_sleep)
 
     @classmethod
     def power_on_all(cls):
@@ -139,7 +147,7 @@ class SynologyManager(SingleTone):
         server_info_dict = lib.configuration.get_servers()
         result_list = []
         for nas_name in server_info_dict.keys():
-            result_list.append(asyncio.run(cls.power_on_async(nas_name, enable_sleep=False)))
+            result_list.append(cls.power_on(nas_name, enable_sleep=False))
             time.sleep(3)
         if False in result_list:
             return False
@@ -156,14 +164,14 @@ class SynologyManager(SingleTone):
         return True
 
     @classmethod
-    async def get_nas_status_async(cls, nas_name: str, enable_name: bool = True):
+    def get_nas_status(cls, nas_name: str, enable_name: bool = True):
         def get_return_value(return_dict: OrderedDict):
             if enable_name:
                 return_dict['name'] = nas_name
             return return_dict
 
         if nas_name.lower() == "all":
-            return await cls.get_nas_status_all_async()
+            return asyncio.run(cls.get_nas_status_all_async())
         server_dict = lib.configuration.get_server(nas_name)
         try:
             with SynologyService(info_dict=server_dict):
@@ -173,10 +181,14 @@ class SynologyManager(SingleTone):
             return get_return_value({"active": False})
 
     @classmethod
+    async def get_nas_status_async(cls, nas_name: str, enable_name: bool = True):
+        return cls.get_nas_status(nas_name, enable_name=enable_name)
+
+    @classmethod
     def get_nas_status_all(cls):
         result_dict = OrderedDict()
         for nas_name in lib.configuration.get_servers().keys():
-            element = copy.deepcopy(asyncio.run(cls.get_nas_status_async(nas_name, enable_name=False)))
+            element = copy.deepcopy(cls.get_nas_status(nas_name, enable_name=False))
             result_dict[nas_name] = element
         return result_dict
 
