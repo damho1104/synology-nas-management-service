@@ -7,6 +7,7 @@
 ## Release
 ### v1.0.0
 - Synology NAS 제품군 종료 API 추가
+- Synology NAS 제품군 켜기 API 추가 (WOL, Wake On Lan)
 
 ## 1. config.json 생성
 - 서버를 실행시킬 host ip 와 port 정보를 입력합니다.
