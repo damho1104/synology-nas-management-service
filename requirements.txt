@@ -1,0 +1,6 @@
+requests==2.27.1
+pyinstaller==4.9
+fastapi==0.75.2
+uvicorn==0.17.6
+pydantic==1.9.0
+synology-api==0.4.2
