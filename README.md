@@ -128,10 +128,114 @@ Synology NAS 로컬 서버 정보
   ```
 - dist 디렉토리로 이동하여 아래 명령과 같이 실행합니다.
   ```shell
+  $ cd dist
   $ ./syno-manage-server
   ```
 #### Case 2. Run script
 - 아래 명령과 같이 실행합니다.
   ```shell
   $ python3 src/server.py
+  ```
+
+## 3. API 설명
+### 3-1. NAS 상태 확인
+```text
+GET Method
+http://[SERVER_IP]:[PORT]/nas/status/[SYNOLOGY_NAS_NAME]
+```
+- 예제
+  ```text
+  http://192.168.0.100:10000/nas/status/MYNAS1
+  ```
+  ```json
+  {
+    "ip":"192.168.0.3",
+    "port":"5000",
+    "active":true,
+    "name":"MYNAS1"
+  }
+  ```
+  
+### 3-2. 모든 NAS 상태 확인
+```text
+GET Method
+http://[SERVER_IP]:[PORT]/nas/status
+```
+- 예제
+  ```text
+  http://192.168.0.100:10000/nas/status
+  ```
+  ```json
+  {
+    "LDHNAS1": {
+      "ip":"192.168.0.3",
+      "port":"5000",
+      "active":true
+    },
+    "LDHNAS2": {
+      "ip":"192.168.0.23",
+      "port":"5000",
+      "active":true
+    }
+  }
+  ```
+  
+### 3-3. 개별 NAS 끄기
+```text
+GET Method
+http://[SERVER_IP]:[PORT]/nas/shutdown/[SYNOLOGY_NAS_NAME]
+```
+- 예제
+  ```text
+  http://192.168.0.100:10000/nas/shutdown/MYNAS1
+  ```
+  ```text
+  OK
+  ```
+
+### 3-4. 모든 NAS 끄기
+```text
+GET Method
+http://[SERVER_IP]:[PORT]/nas/all/shutdown?background_mode=[true|false]
+
+Query parameter
+background_mode : true|false
+- true 설정 시 NAS shutdown request 에 대한 response 여부 확인 없이 바로 response
+```
+- 예제
+  ```text
+  http://192.168.0.100:10000/nas/all/shutdown?background_mode=true
+  ```
+  ```text
+  OK
+  ```
+
+### 3-5. 개별 NAS 켜기 (Wake On Lan)
+```text
+GET Method
+http://[SERVER_IP]:[PORT]/nas/power/on/[SYNOLOGY_NAS_NAME]
+```
+- 예제
+  ```text
+  http://192.168.0.100:10000/nas/power/on/MYNAS1
+  ```
+  ```text
+  OK
+  ```
+  
+### 3-6. 모든 NAS 켜기 (Wake On Lan)
+```text
+GET Method
+http://[SERVER_IP]:[PORT]/nas/all/power/on?background_mode=[true|false]
+
+Query parameter
+background_mode : true|false
+- true 설정 시 NAS Power On request 만 전송하고 바로 response
+```
+- 예제
+  ```text
+  http://192.168.0.100:10000/nas/power/on/all
+  ```
+  ```text
+  OK
   ```
